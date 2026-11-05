@@ -1,0 +1,9 @@
+.pmg-bak/
+.archive/
+*.pmgtmp
+build/
+out/
+.vs/
+*.user
+imgui.ini
+*.log
