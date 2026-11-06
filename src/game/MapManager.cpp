@@ -95,6 +95,10 @@ bool MapManager::BlocksEnemy(Vec2i t) const {
     if (BlocksEnemyTerrain(t)) return true;
     return rocks[Idx(t)] != ECS::NULL_ENTITY || walls[Idx(t)] != ECS::NULL_ENTITY;
 }
+bool MapManager::BlocksGhost(Vec2i t) const {
+    if (BlocksEnemyTerrain(t)) return true;
+    return rocks[Idx(t)] != ECS::NULL_ENTITY;
+}
 bool MapManager::BlocksProjectile(Vec2i t) const {
     if (!InBounds(t)) return true;
     if (Props(terrain[Idx(t)]).blocksProjectile) return true;

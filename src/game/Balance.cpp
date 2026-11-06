@@ -72,6 +72,9 @@ Balance Balance::Load(const core::Config& c) {
     b.shooterStart = c.F("spawn.shooter_start");
     b.shooterRatioStart = c.F("spawn.shooter_ratio_start");
     b.shooterRatioPerMin = c.F("spawn.shooter_ratio_per_min");
+    b.ghostStart = c.F("spawn.ghost_start");
+    b.ghostRatioStart = c.F("spawn.ghost_ratio_start");
+    b.ghostRatioPerMin = c.F("spawn.ghost_ratio_per_min");
     b.bigStart = c.F("spawn.big_start");
     b.bigRatioStart = c.F("spawn.big_ratio_start");
     b.bigRatioPerMin = c.F("spawn.big_ratio_per_min");
@@ -93,6 +96,7 @@ Balance Balance::Load(const core::Config& c) {
         e.xp = c.I(p + "xp");
         e.breaksWalls = c.B(p + "breaks_walls");
         e.pushesRocks = c.B(p + "pushes_rocks");
+        e.ignoresWalls = c.B(p + "ignores_walls");
         e.wallDps = c.F(p + "wall_dps");
         e.range = c.F(p + "range");
         e.shotDamage = c.F(p + "shot_damage");

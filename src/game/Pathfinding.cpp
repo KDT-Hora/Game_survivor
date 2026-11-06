@@ -12,7 +12,7 @@ namespace {
 float StepCost(const MapManager& map, Vec2i t, const PathProfile& p) {
     if (map.BlocksEnemyTerrain(t)) return -1.f;
     float c = 1.f;
-    if (map.WallAt(t) != ECS::NULL_ENTITY) {
+    if (map.WallAt(t) != ECS::NULL_ENTITY && !p.ignoresWalls) {
         if (p.wallCost <= 0.f) return -1.f;
         c += p.wallCost;
     }

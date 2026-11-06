@@ -20,6 +20,7 @@ struct InputState {
     bool pausePressed = false; // Esc(エッジ)
     bool startPressed = false; // Title / Result からの開始(エッジ)
     int choose = -1;           // レベルアップ選択(0 始まり)
+    int modeSelect = -1;       // タイトル画面でのゲームモード選択(0 始まり)
 };
 
 struct DamageEvent {
@@ -95,6 +96,9 @@ EntityID CreateEnemy(GameContext& g, int def, Vec2 pos);
 EntityID CreatePickup(GameContext& g, PickupKind kind, int amount, Vec2 pos);
 EntityID CreateProjectile(GameContext& g, Vec2 pos, Vec2 vel, float damage, float life, float radius, bool pierce = false, int kind = 0, bool hostile = false);
 EntityID CreateBomb(GameContext& g, Vec2 pos, float fuse, float blastRadius, float damage, float flash);
+
+// 敵の移動・見通しの判定で使う「通れないもの」の種類(壁をすり抜ける敵は Ghost)。
+inline MapManager::Who WhoOf(const EnemyDef& def) { return def.ignoresWalls ? MapManager::Who::Ghost : MapManager::Who::Enemy; }
 
 // --- 共通の問い合わせ ---
 // 建築プレビュー・実行が共有する計画(§14.3)。

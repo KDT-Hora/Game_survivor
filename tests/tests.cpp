@@ -192,7 +192,7 @@ TEST(config_loads_balance_and_missing_key_throws) {
     try { cfg.F("no.such.key"); } catch (const std::exception&) { threw = true; }
     CHECK(threw);
     Balance b = Balance::Load(cfg);
-    CHECK(b.enemies.size() == 4 && b.walls.size() == 1 && !b.upgrades.empty());
+    CHECK(b.enemies.size() == 5 && b.walls.size() == 1 && !b.upgrades.empty());
     CHECK(b.playerHp == 100.f);
 }
 
@@ -607,7 +607,7 @@ TEST(sim_build_wall_in_8_directions_consumes_wood_only_on_success) {
     CHECK(inv.wood == 100 - 8 * 3);
     // 壁にはHPがある
     auto& hp = f.ecs().GetComponent<Health>(f.map().WallAt({pt.x + 1, pt.y}));
-    CHECK(hp.hp == 100.f);
+    CHECK(hp.hp == f.g().bal.walls[0].hp);
     // プレイヤーは壁と重ならない
     CHECK(!f.map().CircleHitsBlocked(f.PlayerPos(), 10.f, MapManager::Who::Player));
 }
@@ -751,7 +751,7 @@ TEST(sim_enemy_goes_around_wall_and_never_overlaps_solids) {
 }
 
 TEST(sim_rock_moved_into_enemy_route_changes_the_route) {
-    Fixture f;
+    Fixture f("enemy.normal.breaks_walls = 0\n");   // 壁を壊せない敵の挙動を見る
     f.GodMode();
     f.ClearWeapon();
     const Vec2i pt = f.PlayerTile();
@@ -772,7 +772,7 @@ TEST(sim_rock_moved_into_enemy_route_changes_the_route) {
 }
 
 TEST(sim_unreachable_enemy_does_not_jitter_or_wander) {
-    Fixture f;
+    Fixture f("enemy.normal.breaks_walls = 0\n");   // 壁を壊せない敵の挙動を見る
     f.GodMode();
     f.ClearWeapon();
     const Vec2i pt = f.PlayerTile();
@@ -878,6 +878,45 @@ TEST(sim_shooter_does_not_fire_through_rocks) {
     int shots = 0;
     for (int i = 0; i < 60 * 3; ++i) { f.Step(); shots += static_cast<int>(f.g().projectiles.size()); }
     CHECK(shots == 0 || f.Hp(f.sim.PlayerEntity()) == f.g().bal.playerHp);
+}
+
+TEST(sim_ghost_passes_through_walls_but_is_stopped_by_rocks) {
+    Fixture f("enemy.ghost.speed = 120\n");
+    f.GodMode();
+    f.ClearWeapon();
+    const Vec2i pt = f.PlayerTile();
+    CHECK(f.g().bal.enemies[f.Enemy("ghost")].ignoresWalls);
+    // 壁で完全に囲む。壁を壊せない通常敵は入れないが、すり抜ける敵は入ってこられる。
+    for (int dy = -2; dy <= 2; ++dy) for (int dx = -2; dx <= 2; ++dx)
+        if (std::max(std::abs(dx), std::abs(dy)) == 2) CreateWall(f.g(), {pt.x + dx, pt.y + dy}, 0);
+    int destroyed = 0;
+    f.ecs().Events().Subscribe<OnBuildingDestroyed>([&](const OnBuildingDestroyed&) { ++destroyed; });
+    auto ghost = f.Spawn("ghost", f.Center({pt.x + 7, pt.y}));
+    bool reached = false;
+    for (int i = 0; i < 60 * 15 && !reached; ++i) {
+        f.Step();
+        reached = Distance(f.ecs().GetComponent<Transform>(ghost).pos, f.PlayerPos()) < 30.f;
+    }
+    CHECK(reached);
+    CHECK(destroyed == 0);   // 壁は壊さず、すり抜けただけ
+
+    // 岩には止められる(岩で囲まれたプレイヤーには届かない)
+    Fixture f2("enemy.ghost.speed = 120\n");
+    f2.GodMode();
+    f2.ClearWeapon();
+    const Vec2i p2 = f2.PlayerTile();
+    for (int dy = -2; dy <= 2; ++dy) for (int dx = -2; dx <= 2; ++dx)
+        if (std::max(std::abs(dx), std::abs(dy)) == 2) CreateRock(f2.g(), {p2.x + dx, p2.y + dy});
+    auto g2 = f2.Spawn("ghost", f2.Center({p2.x + 7, p2.y}));
+    for (int i = 0; i < 60 * 10; ++i) f2.Step();
+    CHECK(Distance(f2.ecs().GetComponent<Transform>(g2).pos, f2.PlayerPos()) > 60.f);
+}
+
+TEST(wall_is_weak_enough_to_break_in_a_few_seconds) {
+    Fixture f;
+    CHECK(f.g().bal.walls[0].hp <= 50.f);
+    const auto& def = f.g().bal.enemies[f.Enemy("normal")];
+    CHECK(f.g().bal.walls[0].hp / def.wallDps <= 8.f);   // 最小の敵でも 8 秒以内に壊せる
 }
 
 TEST(sim_big_enemy_pushes_or_breaks_rocks) {
@@ -1358,6 +1397,55 @@ TEST(spawn_can_be_switched_off_for_debugging) {
     f.g().spawnEnabled = true;
     f.Step(InputState{}, 60 * 4);
     CHECK(f.g().enemyCount > 0 && f.g().bossSpawned);
+}
+
+TEST(short_mode_overrides_the_balance_and_the_boss_comes_earlier) {
+    core::Config cfg = core::Config::LoadString(BalanceText() + "\n" + kEmpty);
+    GameSession sim(cfg, 1);
+    CHECK(sim.Modes().size() >= 2);
+    CHECK(sim.SetModeById("short"));
+    sim.StartRun(1);
+    sim.Ecs().EnableIntraPhaseShuffle(7);
+    auto& g = sim.Ctx();
+    CHECK(g.bal.duration == 120.f);
+    CHECK(g.bal.enemies[g.bal.EnemyIndex("boss")].hp == 900.f);
+    // 通常モードは変わらない
+    sim.SetMode(0);
+    sim.StartRun(1);
+    CHECK(sim.Ctx().bal.duration == 600.f);
+    // ショートに戻し、ボスが 120 秒で出て、倒すとクリアになる(全体で3分以内)
+    sim.SetModeById("short");
+    sim.StartRun(1);
+    sim.Ecs().EnableIntraPhaseShuffle(7);
+    auto& g2 = sim.Ctx();
+    auto& hp = sim.Ecs().GetComponent<Health>(sim.PlayerEntity());
+    hp.hp = hp.maxHp = 1e9f;
+    InputState in;
+    in.choose = 0;   // レベルアップの選択待ちで止まらないよう、常に先頭を選ぶ
+    for (int i = 0; i < 60 * 121 && !g2.bossSpawned; ++i) sim.Step(in, g2.bal.step);
+    CHECK(g2.bossSpawned && g2.time <= 121.f);
+    sim.Ecs().GetComponent<Health>(g2.boss).hp = 0.f;
+    for (int i = 0; i < 5; ++i) sim.Step(in, g2.bal.step);
+    CHECK(sim.State() == GameState::Result && sim.Won());
+    CHECK(g2.time < 180.f);
+}
+
+TEST(title_screen_selects_the_mode_with_number_keys) {
+    core::Config cfg = core::Config::LoadString(BalanceText() + "\n" + kEmpty);
+    GameSession sim(cfg, 1);
+    CHECK(sim.State() == GameState::Title && sim.Mode() == 0);
+    InputState in;
+    in.modeSelect = 1;
+    sim.Step(in, 0.016f);
+    CHECK(sim.Mode() == 1);
+    in = InputState{};
+    in.modeSelect = 9;   // 範囲外は無視
+    sim.Step(in, 0.016f);
+    CHECK(sim.Mode() == 1);
+    in = InputState{};
+    in.startPressed = true;
+    sim.Step(in, 0.016f);
+    CHECK(sim.State() == GameState::InGame && sim.Ctx().bal.duration == 120.f);
 }
 
 TEST(sim_full_length_run_is_stable) {

@@ -21,7 +21,7 @@ public:
             enemy.hold = false;
 
             // 1. 見通しがあれば直進(経路探索を節約し、動きも滑らかになる)
-            if (Distance(pos, playerPos) < 420.f && g.map.SegmentClear(pos, playerPos, radius * 0.8f, MapManager::Who::Enemy)) {
+            if (Distance(pos, playerPos) < 420.f && g.map.SegmentClear(pos, playerPos, radius * 0.8f, WhoOf(def))) {
                 enemy.usingPath = false;
                 enemy.target = playerPos;
                 enemy.state = EnemyState::Chase;
@@ -57,7 +57,7 @@ public:
                 AttackWall(enemy, def, pos, radius, next, wall, dt);
             } else if (rock != ECS::NULL_ENTITY && def.pushesRocks) {
                 PushOrBreakRock(ecs, enemy, pos, radius, next, rock, dt);
-            } else if (g.map.BlocksEnemy(next)) {
+            } else if (g.map.Blocks(next, WhoOf(def))) {
                 // 通常の敵: 経路の先に壁や岩ができた。通り抜けず、すぐ探索し直す。
                 enemy.needsPath = true;
                 enemy.hold = true;

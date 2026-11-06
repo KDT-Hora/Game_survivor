@@ -14,10 +14,25 @@ float TileSizeOf(const core::Config& c) { return c.F("tile.size"); }
 GameSession::World::World(const core::Config& cfg, std::uint32_t seed)
     : ecs(), map(cfg.I("map.width"), cfg.I("map.height"), TileSizeOf(cfg), cfg, ecs.Events()), ctx(cfg, ecs, map, seed) {}
 
-GameSession::GameSession(const core::Config& c, std::uint32_t seed) : cfg(c) { Build(seed); }
+GameSession::GameSession(const core::Config& c, std::uint32_t seed) : cfg(c) {
+    for (const std::string& id : cfg.List("modes"))
+        modes.push_back({id, cfg.S("mode." + id + ".label"), cfg.S("mode." + id + ".desc")});
+    Build(seed);
+}
+
+bool GameSession::SetModeById(const std::string& id) {
+    for (size_t i = 0; i < modes.size(); ++i)
+        if (modes[i].id == id) { mode = static_cast<int>(i); return true; }
+    return false;
+}
 
 void GameSession::Build(std::uint32_t seed) {
-    world = std::make_unique<World>(cfg, seed);
+    // 選んだモードの設定(`mode.<id>.<キー> = 値`)で、基本の設定を上書きする。
+    activeCfg = cfg;
+    if (mode >= 0 && mode < static_cast<int>(modes.size()))
+        for (const auto& kv : cfg.WithPrefix("mode." + modes[mode].id + "."))
+            if (kv.first != "label" && kv.first != "desc") activeCfg.Set(kv.first, kv.second);
+    world = std::make_unique<World>(activeCfg, seed);
     auto& ecs = world->ecs;
     ecs.RegisterComponent<Transform>();
     ecs.RegisterComponent<Collider>();
@@ -115,6 +130,7 @@ void GameSession::Step(const InputState& in, float dt) {
     g.input = in;
     switch (g.state) {
         case GameState::Title:
+            SetMode(in.modeSelect);   // 数字キーでモードを選ぶ
             if (in.startPressed) StartRun(g.rng.Next());
             break;
         case GameState::InGame:

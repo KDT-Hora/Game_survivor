@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace core {
@@ -19,6 +20,13 @@ public:
     bool B(const std::string& key) const { return I(key) != 0; }
     const std::string& S(const std::string& key) const;
     std::vector<std::string> List(const std::string& key) const;  // カンマ区切り
+    // prefix で始まるキーを、prefix を取り除いた名前で返す(ゲームモードの上書き用)
+    std::vector<std::pair<std::string, std::string>> WithPrefix(const std::string& prefix) const {
+        std::vector<std::pair<std::string, std::string>> out;
+        for (const auto& kv : values)
+            if (kv.first.compare(0, prefix.size(), prefix) == 0) out.push_back({kv.first.substr(prefix.size()), kv.second});
+        return out;
+    }
 
 private:
     std::map<std::string, std::string> values;

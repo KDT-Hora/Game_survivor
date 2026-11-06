@@ -247,6 +247,7 @@ void Renderer::DrawWorld(sf::RenderTarget& t, GameSession& sim) {
                 t.draw(ring);
             }
             sf::Sprite spr(tex);
+            if (def.ignoresWalls) spr.setColor(sf::Color(255, 255, 255, 150));   // 壁をすり抜ける敵は半透明
             const sf::Vector2f ts(tex.getSize());
             spr.setOrigin({ts.x / 2.f, ts.y / 2.f});
             spr.setScale({size / ts.x, size / ts.y});
@@ -570,10 +571,19 @@ void Renderer::DrawOverlay(sf::RenderTarget& t, GameSession& sim) {
             dim(170);
             Text(t, "Terrain Survivor", {size.x / 2, size.y / 2 - 130.f}, 54, sf::Color(255, 230, 160), true);
             Text(t, "地形を操作して生き残れ", {size.x / 2, size.y / 2 - 56.f}, 22, sf::Color::White, true);
-            Text(t, "Enter / クリックで開始", {size.x / 2, size.y / 2 + 6.f}, 24, sf::Color(170, 255, 170), true);
-            Text(t, "WASD 移動   マウス 照準   右クリック 壁を建てる   岩は体当たりで押せる", {size.x / 2, size.y / 2 + 70.f}, 15,
+            Text(t, "遊ぶモードを数字キーで選んでください", {size.x / 2, size.y / 2 - 14.f}, 16, sf::Color(220, 220, 220), true);
+            for (size_t i = 0; i < sim.Modes().size(); ++i) {
+                const bool sel = static_cast<int>(i) == sim.Mode();
+                std::snprintf(buf, sizeof buf, "%s[%d] %s", sel ? "> " : "  ", static_cast<int>(i) + 1, sim.Modes()[i].label.c_str());
+                Text(t, buf, {size.x / 2, size.y / 2 + 16.f + 32.f * static_cast<float>(i)}, 24,
+                     sel ? sf::Color(255, 230, 120) : sf::Color(160, 160, 170), true);
+            }
+            if (!sim.Modes().empty())
+                Text(t, sim.Modes()[sim.Mode()].desc, {size.x / 2, size.y / 2 + 16.f + 32.f * static_cast<float>(sim.Modes().size()) + 4.f}, 15,
+                     sf::Color(220, 220, 220), true);
+            Text(t, "Enter / クリックで開始", {size.x / 2, size.y / 2 + 150.f}, 22, sf::Color(170, 255, 170), true);
+            Text(t, "WASD 移動   マウス 照準   右クリック 壁を建てる   岩は体当たりで押せる", {size.x / 2, size.y / 2 + 190.f}, 15,
                  sf::Color(220, 220, 220), true);
-            Text(t, "敵を岩や壁で誘導・封鎖し、10分後に現れるボスを倒せ", {size.x / 2, size.y / 2 + 96.f}, 15, sf::Color(220, 220, 220), true);
             break;
         case GameState::Paused:
             dim(150);

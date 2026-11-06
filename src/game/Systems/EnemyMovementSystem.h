@@ -50,8 +50,8 @@ public:
             }
             move += separation * (def.speed * dt * g.bal.separation);
 
-            transform.pos = MoveAndSlide(g.map, transform.pos, move, radius, MapManager::Who::Enemy);
-            transform.pos = Depenetrate(g.map, transform.pos, radius, MapManager::Who::Enemy);
+            transform.pos = MoveAndSlide(g.map, transform.pos, move, radius, WhoOf(def));
+            transform.pos = Depenetrate(g.map, transform.pos, radius, WhoOf(def));
         }
     }
 };

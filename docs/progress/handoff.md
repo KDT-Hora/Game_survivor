@@ -4,7 +4,7 @@
 - 役(`.claude/agents`: implementer / reviewer / qa)とスキル(`.claude/skills`: build / playtest)を追加。
 - rimrim から SFML(静的リンク)と ECS の骨格を流用し、問題点を直した(調査結果と実装で選んだ内容は `docs/discussions/initial-setup-notes.md`(未承認))。
 - `src/ecs` `src/core` `src/game` は SFML 非依存、`src/app` が描画・入力。`data/balance.cfg` にバランス数値。
-- `ts_tests` 71件が全て通過(§19.2 のうちロジックで確認できる項目、11分フルラン、350体で 0.2ms/step)。
+- `ts_tests` 75件が全て通過(§19.2 のうちロジックで確認できる項目、11分フルラン、350体で 0.2ms/step)。
 - スクリーンショットで、地形・岩・壁・建築プレビュー・HUD・各画面の描画を確認。実ウィンドウは4秒の起動確認のみ(人の操作は未確認)。
 - 追加対応: System を**フェーズ制**に変更(フェーズ間のみ順序、同フェーズ内は順不同。テストはフェーズ内を毎フレーム乱して検証)。
 - 追加対応: 強化で新しい攻撃手段を獲得(時限爆弾 / 貫通ビーム / 玉を増やす)。同じ手段を再び選ぶとレベルアップ。
@@ -13,6 +13,8 @@
 - 追加対応: rimrim の書き方に寄せて構造を整理・簡素化(System を1つ1ファイルに分割、`MapSystem`→`MapManager`・`Simulation`→`GameSession`、世代付き ID 廃止、経路探索の優先制御を簡素化、押し出し割当を単純化)。詳細は `docs/discussions/initial-setup-notes.md` の末尾。
 - 追加対応: 最小の敵も壁を壊せる(wall_dps 8)。遠距離敵 shooter(黄スライム、紫の弾。壁にも当たる)を追加。
 - 追加対応: F1 のデバッグモード(Dear ImGui)。システム/プレイヤー/敵の出現の3ウィンドウ。当たり判定の表示、早送り、ステータス変更、出現の調整・手動出現。`--debug-draw` `--debug-paths` `--debug` で確認可。
+- 追加対応: 壁の耐久を 100→40 に。壁をすり抜ける敵 ghost(青スライム・半透明)を追加。
+- 追加対応: ショートモード(約3分)。タイトル画面で数字キーでモード選択。
 ## 次の作業
 0. **人の判断待ち**: 終了条件の食い違い(§13.1 ボス撃破 vs §19.2-11 生存時間到達)。詳細は `docs/discussions/initial-setup-notes.md`。
 1. 人が実際に遊んで操作感を確認する(`build/Release/terrain_survivor.exe`)。岩押しの手応え・建築・敵の挙動を見て調整点を挙げる。

@@ -246,6 +246,9 @@ void DebugUi::SpawnWindow(GameSession& sim) {
     ImGui::SliderFloat("遠距離敵 出始め(秒)", &g.bal.shooterStart, 0.f, 600.f, "%.0f");
     ImGui::SliderFloat("遠距離敵 割合", &g.bal.shooterRatioStart, 0.f, 1.f, "%.2f");
     ImGui::SliderFloat("遠距離敵 1分ごとの増加", &g.bal.shooterRatioPerMin, 0.f, 0.5f, "%.3f");
+    ImGui::SliderFloat("すり抜け敵 出始め(秒)", &g.bal.ghostStart, 0.f, 600.f, "%.0f");
+    ImGui::SliderFloat("すり抜け敵 割合", &g.bal.ghostRatioStart, 0.f, 1.f, "%.2f");
+    ImGui::SliderFloat("すり抜け敵 1分ごとの増加", &g.bal.ghostRatioPerMin, 0.f, 0.5f, "%.3f");
     ImGui::SliderFloat("大型 出始め(秒)", &g.bal.bigStart, 0.f, 600.f, "%.0f");
     ImGui::SliderFloat("大型 割合", &g.bal.bigRatioStart, 0.f, 1.f, "%.2f");
     ImGui::SliderFloat("大型 1分ごとの増加", &g.bal.bigRatioPerMin, 0.f, 0.5f, "%.3f");

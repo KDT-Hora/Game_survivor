@@ -8,7 +8,8 @@ namespace game {
 // 経路探索のプロファイル。敵ごとの能力(壁を壊せる/岩を押せる)を、種別の条件分岐ではなくコストで表す。
 struct PathProfile {
     float wallCost = 0.f;   // 0 = 壁は通れない / >0 = 壁を壊して進むコスト(1タイル)
-    float rockCost = 0.f;   // 0 = 岩は通れない / >0 = 岩を押す・壊すコスト
+    float rockCost = 0.f;
+    bool ignoresWalls = false;   // true なら壁は障害物ではない(すり抜ける敵)   // 0 = 岩は通れない / >0 = 岩を押す・壊すコスト
 };
 
 struct PathResult {

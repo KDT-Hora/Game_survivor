@@ -38,6 +38,10 @@ private:
         while (enemyAcc >= 1.f) {
             enemyAcc -= 1.f;
             int def = g.bal.EnemyIndex("normal");
+            if (g.time >= g.bal.ghostStart) {
+                const float ratio = g.bal.ghostRatioStart + g.bal.ghostRatioPerMin * ((g.time - g.bal.ghostStart) / 60.f);
+                if (g.rng.Chance(ratio)) def = g.bal.EnemyIndex("ghost");
+            }
             if (g.time >= g.bal.shooterStart) {
                 const float ratio = g.bal.shooterRatioStart + g.bal.shooterRatioPerMin * ((g.time - g.bal.shooterStart) / 60.f);
                 if (g.rng.Chance(ratio)) def = g.bal.EnemyIndex("shooter");

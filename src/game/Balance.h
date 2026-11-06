@@ -12,6 +12,7 @@ struct EnemyDef {
     float hp, speed, radius, contactDamage;
     int xp;
     bool breaksWalls, pushesRocks;
+    bool ignoresWalls = false;   // true なら、プレイヤーの壁をすり抜ける(地形と岩には止められる)
     float wallDps;
     float range = 0, shotDamage = 0, shotSpeed = 0, shotCooldown = 1;   // range > 0 なら遠距離攻撃をする敵
     float dropWoodChance; int dropWoodAmount;
@@ -63,6 +64,7 @@ struct Balance {
     float animFps = 6.f;
 
     float shooterStart, shooterRatioStart, shooterRatioPerMin;   // 遠距離敵の出現
+    float ghostStart, ghostRatioStart, ghostRatioPerMin;         // 壁をすり抜ける敵の出現
     float spawnMin, spawnMax, rateBase, ratePerMin;
     int maxAlive;
     float bigStart, bigRatioStart, bigRatioPerMin, hpGrowthPerMin;

@@ -34,3 +34,4 @@ cd build/Release
 - `--debug-draw` で当たり判定(円・通行不可タイル)を重ねて撮る。`--debug-paths` は敵の経路も描く。
 - ImGui のウィンドウ(F1 / `--debug`)はヘッドレスのスクリーンショットには写らない。実ウィンドウを起動して確認する。
 - exe が起動したままだと `build/Release/terrain_survivor.exe` を上書きできずリンクに失敗する。先に閉じる。
+- `--mode short` でショートモード(約3分)を確認できる(`--no-autostart` と組み合わせるとタイトル画面)。

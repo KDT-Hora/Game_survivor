@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "game/GameContext.h"
 
@@ -15,6 +17,13 @@ public:
     void StartRun(std::uint32_t seed);
     // 入力を渡して1ステップ進める(固定 dt)。Title/Paused/LevelUp/GameOver/Result の遷移もここ。
     void Step(const InputState& input, float dt);
+
+    // ゲームモード(balance.cfg の modes)。選んだモードの `mode.<id>.<キー>` が、次のランの設定を上書きする。
+    struct ModeInfo { std::string id, label, desc; };
+    const std::vector<ModeInfo>& Modes() const { return modes; }
+    int Mode() const { return mode; }
+    void SetMode(int index) { if (index >= 0 && index < static_cast<int>(modes.size())) mode = index; }
+    bool SetModeById(const std::string& id);
 
     GameState State() const { return world->ctx.state; }
     bool Won() const { return won; }
@@ -40,6 +49,9 @@ private:
     void MakeOffer();
 
     const core::Config& cfg;
+    core::Config activeCfg;   // cfg にモードの上書きを適用したもの(World はこれを参照する)
+    std::vector<ModeInfo> modes;
+    int mode = 0;
     std::unique_ptr<World> world;
     bool won = false;
 };

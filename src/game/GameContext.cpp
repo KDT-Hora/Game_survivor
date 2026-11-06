@@ -44,7 +44,7 @@ Vec2 Depenetrate(const MapManager& map, Vec2 pos, float r, MapManager::Who who) 
         const Vec2i hi = map.WorldToTile({pos.x + r, pos.y + r});
         for (int ty = lo.y; ty <= hi.y; ++ty) {
             for (int tx = lo.x; tx <= hi.x; ++tx) {
-                bool blocked = who == MapManager::Who::Player ? map.BlocksPlayer({tx, ty}) : map.BlocksEnemy({tx, ty});
+                bool blocked = map.Blocks({tx, ty}, who);
                 if (!blocked) continue;
                 const Vec2 mn = map.TileMin({tx, ty});
                 const float cx = std::clamp(pos.x, mn.x, mn.x + T);

@@ -77,10 +77,12 @@ public:
     bool BlocksEnemyTerrain(Vec2i t) const;   // 地形のみ(壁・岩を壊せる敵の経路用)
     bool BlocksProjectile(Vec2i t) const;
     bool BlocksBuilding(Vec2i t) const;
+    bool BlocksGhost(Vec2i t) const;          // 地形+岩(壁は通り抜ける)
     bool BlocksRock(Vec2i t) const;           // 岩の移動先として不可(地形が非 walkable、岩、壁、範囲外)
 
     // 円(連続座標)が、指定条件でブロックされるタイルと重なるか。
-    enum class Who { Player, Enemy, Projectile };
+    enum class Who { Player, Enemy, Projectile, Ghost };   // Ghost = 壁をすり抜ける敵(地形と岩だけに止められる)
+    bool Blocks(Vec2i t, Who who) const { return BlockedFor(t, who); }
     bool CircleHitsBlocked(Vec2 center, float radius, Who who) const;
     // 線分が(半径付きで)ブロックされるタイルを横切らないか。敵の見通し判定に使う。
     bool SegmentClear(Vec2 a, Vec2 b, float radius, Who who) const;
@@ -93,6 +95,7 @@ private:
     bool BlockedFor(Vec2i t, Who who) const {
         if (who == Who::Player) return BlocksPlayer(t);
         if (who == Who::Projectile) return BlocksProjectile(t);
+        if (who == Who::Ghost) return BlocksGhost(t);
         return BlocksEnemy(t);
     }
 

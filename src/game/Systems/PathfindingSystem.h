@@ -65,6 +65,7 @@ private:
         PathProfile p;
         p.wallCost = def.breaksWalls ? g.bal.wallPathCost : 0.f;
         p.rockCost = def.pushesRocks ? g.bal.rockPathCost : 0.f;
+        p.ignoresWalls = def.ignoresWalls;
         return p;
     }
 

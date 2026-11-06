@@ -78,7 +78,7 @@ std::vector<Cmd> ParseScript(const std::string& text) {
 // ============================================================================
 int main(int argc, char** argv) {
     int frames = -1;
-    std::string shot, scriptText, give;
+    std::string shot, scriptText, give, modeId;
     std::vector<std::pair<std::string, std::string>> overrides;
     std::uint32_t seed = 1;
     bool bot = false, noAutostart = false, debugDraw = false, debugPaths = false, startDebug = false;
@@ -98,6 +98,7 @@ int main(int argc, char** argv) {
         else if (a == "--debug") startDebug = true;   // 確認用: 最初からデバッグモード
         else if (a == "--debug-draw") debugDraw = true;    // 確認用: 当たり判定を重ねて描く
         else if (a == "--debug-paths") debugPaths = true;  // 確認用: 敵の経路も描く
+        else if (a == "--mode") modeId = next();   // ゲームモード(例: short)
         else if (a == "--bot") bot = true;
         else if (a == "--no-autostart") noAutostart = true;
     }
@@ -114,6 +115,7 @@ int main(int argc, char** argv) {
     for (const auto& kv : overrides) cfg.Set(kv.first, kv.second);
     GameSession sim(cfg, seed);
     app::Renderer renderer(std::filesystem::path(dataFile).parent_path().u8string());
+    if (!modeId.empty() && !sim.SetModeById(modeId)) std::fprintf(stderr, "警告: 不明なモード: %s\n", modeId.c_str());
     const float step = sim.Ctx().bal.step;
     renderer.debug.colliders = debugDraw || debugPaths;
     renderer.debug.paths = debugPaths;
@@ -253,6 +255,7 @@ int main(int argc, char** argv) {
                     const int n = static_cast<int>(k->code) - static_cast<int>(K::Num1);
                     in.wallSelect = n;
                     in.choose = n;
+                    in.modeSelect = n;
                 }
                 if (k->code == K::Tab) tabHeld = true;
             }
@@ -295,14 +298,14 @@ int main(int argc, char** argv) {
             sim.Step(stepIn, step);
             stepIn.buildPressed = stepIn.pausePressed = stepIn.startPressed = false;   // エッジは最初の1ステップだけ
             stepIn.choose = -1;
-            stepIn.wallSelect = -1;
+            stepIn.wallSelect = stepIn.modeSelect = -1;
             acc -= step;
             ++steps;
         }
         if (steps > 0) {   // 実際に消費されたときだけエッジを捨てる
             pending.buildPressed = pending.pausePressed = pending.startPressed = false;
             pending.choose = -1;
-            pending.wallSelect = -1;
+            pending.wallSelect = pending.modeSelect = -1;
         }
         renderer.Draw(window, sim, tabHeld);
         debugUi.Render(window);
