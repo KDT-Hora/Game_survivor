@@ -52,6 +52,7 @@ void GameSession::Build(std::uint32_t seed) {
     RegisterSystems(world->ctx);
     GenerateMap(world->ctx);
     won = false;
+    ++runId;
 }
 
 void GameSession::StartRun(std::uint32_t seed) {
@@ -127,6 +128,7 @@ void GameSession::RunFrame(float dt) {
 
 void GameSession::Step(const InputState& in, float dt) {
     auto& g = world->ctx;
+    g.fx.clear();   // 前のステップの出来事は捨てる(app 層は Step 直後に読む)
     g.input = in;
     switch (g.state) {
         case GameState::Title:

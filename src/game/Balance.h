@@ -17,6 +17,8 @@ struct EnemyDef {
     float range = 0, shotDamage = 0, shotSpeed = 0, shotCooldown = 1;   // range > 0 なら遠距離攻撃をする敵
     float dropWoodChance; int dropWoodAmount;
     float dropStoneChance; int dropStoneAmount;
+    float dropHealChance = 0;   // 回復アイテムを落とす確率(省略可)
+    float knockbackMul = 1;     // 押されやすさ。0 で押されない(ボスなど。省略可)
     std::string sprite;   // 画像フォルダ名(sprite.dir 配下。0.png, 1.png ... をアニメーションに使う)
     float drawSize = 32;  // 描画サイズ(ワールド単位)。当たり判定の半径とは別
 };
@@ -35,6 +37,7 @@ struct WeaponDef {
     float damage = 0, cooldown = 1, range = 0, speed = 0, radius = 0, lifetime = 0;
     float fuse = 0, blastRadius = 0, flash = 0;   // 爆弾
     float levelDamage = 0, levelCooldown = 0;     // レベル1つあたりの威力増加率・クールダウン短縮率
+    float knockback = 0;                          // 命中した敵を押す距離(px。省略可)
 };
 
 enum class UpgradeStat { Damage, AttackSpeed, MaxHp, DamageReduction, MoveSpeed, WallHp, BuildCost, PushSpeed, PickupRange,
@@ -71,6 +74,8 @@ struct Balance {
 
     int xpBase, xpGrowth, levelChoices;
     float pickupRadius;
+    float magnetRadius, magnetSpeed;   // アイテムが吸い寄せられ始める距離と速さ
+    float healAmount;                  // 回復アイテム1つの回復量
 
     std::vector<EnemyDef> enemies;
     std::vector<WallDef> walls;

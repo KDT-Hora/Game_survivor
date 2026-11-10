@@ -23,11 +23,15 @@ public:
             if (bomb.fuse > 0.f) continue;
 
             bomb.exploded = true;
+            g.fx.push_back({FxEvent::Kind::Explosion, pos, bomb.blastRadius});
             g.enemyGrid.Query(pos, bomb.blastRadius + 40.f, [&](EntityID other) {
                 if (!ecs.IsAlive(other)) return;
                 auto* t = ecs.TryGet<Transform>(other);
                 auto* c = ecs.TryGet<Collider>(other);
-                if (t && c && Distance(t->pos, pos) < bomb.blastRadius + c->radius) g.damage.push_back({other, bomb.damage});
+                if (!t || !c || Distance(t->pos, pos) >= bomb.blastRadius + c->radius) return;
+                Vec2 away = (t->pos - pos).Normalized();
+                if (away.LengthSq() == 0.f) away = {1.f, 0.f};
+                g.damage.push_back({other, bomb.damage, away * bomb.knock});
             });
         }
     }

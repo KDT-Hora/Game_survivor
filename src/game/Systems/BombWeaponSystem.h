@@ -12,7 +12,7 @@ protected:
     bool Fire(ECS::ECSManager& ecs, EntityID player, const WeaponDef& def, const WeaponSlot& slot,
               const PlayerStats& stats) override {
         const Vec2 pos = ecs.GetComponent<Transform>(player).pos;
-        CreateBomb(g, pos, def.fuse, def.blastRadius, Damage(def, slot, stats), def.flash);
+        CreateBomb(g, pos, def.fuse, def.blastRadius, Damage(def, slot, stats), def.flash, def.knockback);
         return true;
     }
 };

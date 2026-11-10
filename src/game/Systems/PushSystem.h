@@ -46,6 +46,7 @@ public:
             }
             if (canPush) {
                 if (player.pushRock != rockTile) { player.pushRock = rockTile; player.pushTimer = 0.f; }
+                player.pushDir = dir;
                 player.pushGrace = 0.25f;
                 player.pushTimer += dt * stats.pushSpeedMul;
                 if (player.pushTimer >= g.bal.pushHold) {
@@ -55,10 +56,13 @@ public:
                     ecs.GetComponent<GridPosition>(rock).tile = dest;
                     player.pushRock = dest;
                     player.pushTimer = 0.f;
+                    ++g.rocksPushed;
+                    g.fx.push_back({FxEvent::Kind::RockMoved, g.map.TileCenter(dest), 0.f, 0});
                 }
             } else {
                 player.pushTimer = 0.f;
                 player.pushRock = {-1, -1};
+                player.pushDir = {0, 0};
                 player.pushGrace = std::max(0.f, player.pushGrace - dt);
             }
             player.pushing = player.pushGrace > 0.f;

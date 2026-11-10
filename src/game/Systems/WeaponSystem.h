@@ -26,14 +26,7 @@ public:
         }
     }
 
-protected:
-    WeaponSystem(GameContext& c, WeaponType t) : GameSystem(c), type(t) {}
-
-    // 武器を使う。使ったら true。
-    virtual bool Fire(ECS::ECSManager& ecs, EntityID player, const WeaponDef& def, const WeaponSlot& slot,
-                      const PlayerStats& stats) = 0;
-
-    // 同じ武器をもう一度選ぶとレベルが上がる。レベルに応じた威力とクールダウン。
+    // 同じ武器をもう一度選ぶとレベルが上がる。レベルに応じた威力とクールダウン(HUD のクールダウン表示も使う)。
     static float Damage(const WeaponDef& d, const WeaponSlot& s, const PlayerStats& st) {
         return d.damage * (1.f + d.levelDamage * static_cast<float>(s.level - 1)) * st.damageMul;
     }
@@ -41,6 +34,13 @@ protected:
         const float mul = std::max(0.4f, 1.f - d.levelCooldown * static_cast<float>(s.level - 1));
         return d.cooldown * mul / st.attackSpeedMul;
     }
+
+protected:
+    WeaponSystem(GameContext& c, WeaponType t) : GameSystem(c), type(t) {}
+
+    // 武器を使う。使ったら true。
+    virtual bool Fire(ECS::ECSManager& ecs, EntityID player, const WeaponDef& def, const WeaponSlot& slot,
+                      const PlayerStats& stats) = 0;
 
 private:
     WeaponType type;

@@ -27,6 +27,8 @@ public:
 
     GameState State() const { return world->ctx.state; }
     bool Won() const { return won; }
+    // World を作り直すたびに増える番号。app 層が地形の描画キャッシュを捨てる目安にする。
+    std::uint32_t RunId() const { return runId; }
 
     GameContext& Ctx() { return world->ctx; }
     ECS::ECSManager& Ecs() { return world->ecs; }
@@ -54,6 +56,7 @@ private:
     int mode = 0;
     std::unique_ptr<World> world;
     bool won = false;
+    std::uint32_t runId = 0;
 };
 
 // マップ生成(将来のランダム生成に対応できるよう分離)。

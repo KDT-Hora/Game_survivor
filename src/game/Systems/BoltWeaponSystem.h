@@ -41,7 +41,8 @@ protected:
                 const float angle = 0.12f * static_cast<float>((round + 1) / 2) * (round % 2 ? 1.f : -1.f);
                 dir = {dir.x * std::cos(angle) - dir.y * std::sin(angle), dir.x * std::sin(angle) + dir.y * std::cos(angle)};
             }
-            CreateProjectile(g, pos, dir * def.speed, Damage(def, slot, stats), def.lifetime, def.radius);
+            CreateProjectile(g, pos, dir * def.speed, Damage(def, slot, stats), def.lifetime, def.radius,
+                             false, 0, false, def.knockback);
         }
         return true;
     }

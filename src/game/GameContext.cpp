@@ -154,6 +154,7 @@ EntityID CreateEnemy(GameContext& g, int def, Vec2 pos) {
     en.target = pos;
     en.shotTimer = g.rng.Range(0.f, d.shotCooldown);   // 撃つタイミングをずらす
     en.repathTimer = g.rng.Range(0.f, g.bal.repathInterval);  // 探索タイミングをずらす(§8.2)
+    en.lateral = g.rng.Range(-1.f, 1.f);
     g.ecs.AddComponent(id, en);
     return id;
 }
@@ -161,11 +162,11 @@ EntityID CreateEnemy(GameContext& g, int def, Vec2 pos) {
 EntityID CreatePickup(GameContext& g, PickupKind kind, int amount, Vec2 pos) {
     EntityID id = g.ecs.CreateEntity();
     g.ecs.AddComponent(id, Transform{pos});
-    g.ecs.AddComponent(id, Pickup{kind, amount});
+    g.ecs.AddComponent(id, Pickup{kind, amount, g.time});
     return id;
 }
 
-EntityID CreateProjectile(GameContext& g, Vec2 pos, Vec2 vel, float damage, float life, float radius, bool pierce, int kind, bool hostile) {
+EntityID CreateProjectile(GameContext& g, Vec2 pos, Vec2 vel, float damage, float life, float radius, bool pierce, int kind, bool hostile, float knock) {
     EntityID id = g.ecs.CreateEntity();
     g.ecs.AddComponent(id, Transform{pos});
     g.ecs.AddComponent(id, Collider{radius});
@@ -176,17 +177,19 @@ EntityID CreateProjectile(GameContext& g, Vec2 pos, Vec2 vel, float damage, floa
     p.pierce = pierce;
     p.kind = kind;
     p.hostile = hostile;
+    p.knock = knock;
     g.ecs.AddComponent(id, p);
     return id;
 }
 
-EntityID CreateBomb(GameContext& g, Vec2 pos, float fuse, float blastRadius, float damage, float flash) {
+EntityID CreateBomb(GameContext& g, Vec2 pos, float fuse, float blastRadius, float damage, float flash, float knock) {
     EntityID id = g.ecs.CreateEntity();
     g.ecs.AddComponent(id, Transform{pos});
     Bomb b;
     b.fuse = fuse;
     b.blastRadius = blastRadius;
     b.damage = damage;
+    b.knock = knock;
     b.flash = b.flashTotal = flash;
     g.ecs.AddComponent(id, b);
     return id;

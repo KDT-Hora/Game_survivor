@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+
 #include "game/Systems/GameSystem.h"
 
 namespace game {
@@ -19,11 +21,16 @@ public:
             const float radius = ecs.GetComponent<Collider>(e).radius;
             const EnemyDef& def = g.bal.enemies[enemy.def];
             enemy.hold = false;
+            enemy.hitFlash = std::max(0.f, enemy.hitFlash - dt);
 
             // 1. 見通しがあれば直進(経路探索を節約し、動きも滑らかになる)
             if (Distance(pos, playerPos) < 420.f && g.map.SegmentClear(pos, playerPos, radius * 0.8f, WhoOf(def))) {
                 enemy.usingPath = false;
-                enemy.target = playerPos;
+                // 全員が同じ点を目指すと一列の団子になるので、個体ごとに少し横へずらした点を狙う。近づいたらずれは消える。
+                const Vec2 to = playerPos - pos;
+                const Vec2 side{-to.y, to.x};
+                const float spread = std::min(1.f, Distance(pos, playerPos) / 160.f) * radius * 1.5f;
+                enemy.target = playerPos + side.Normalized() * (enemy.lateral * spread);
                 enemy.state = EnemyState::Chase;
                 enemy.obstacleTimer = 0.f;
                 if (def.range > 0.f && Distance(pos, playerPos) < def.range * 0.85f) enemy.hold = true;   // 遠距離敵は射程に入ったら止まって撃つ
@@ -95,10 +102,12 @@ private:
         if (canPush && enemy.obstacleTimer >= g.bal.rockPushHold) {
             g.map.MoveRock(rockTile, rockTile + dir);
             ecs.GetComponent<GridPosition>(rock).tile = rockTile + dir;
+            g.fx.push_back({FxEvent::Kind::RockMoved, g.map.TileCenter(rockTile + dir), 0.f, 1});
             enemy.obstacleTimer = 0.f;
         } else if (!canPush && enemy.obstacleTimer >= g.bal.rockBreakAfter) {
             g.map.RemoveRock(rockTile);
             ecs.DestroyLater(rock);
+            g.fx.push_back({FxEvent::Kind::RockMoved, g.map.TileCenter(rockTile), 0.f, 2});
             enemy.obstacleTimer = 0.f;
         }
     }

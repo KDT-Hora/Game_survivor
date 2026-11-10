@@ -84,6 +84,9 @@ Balance Balance::Load(const core::Config& c) {
     b.xpGrowth = c.I("level.xp_growth");
     b.levelChoices = c.I("level.choices");
     b.pickupRadius = c.F("pickup.radius");
+    b.magnetRadius = c.F("pickup.magnet_radius");
+    b.magnetSpeed = c.F("pickup.magnet_speed");
+    b.healAmount = c.F("pickup.heal_amount");
 
     for (const auto& n : c.List("enemies")) {
         const std::string p = "enemy." + n + ".";
@@ -106,6 +109,8 @@ Balance Balance::Load(const core::Config& c) {
         e.dropWoodAmount = c.I(p + "drop_wood_amount");
         e.dropStoneChance = c.F(p + "drop_stone_chance");
         e.dropStoneAmount = c.I(p + "drop_stone_amount");
+        e.dropHealChance = c.Has(p + "drop_heal_chance") ? c.F(p + "drop_heal_chance") : 0.f;
+        e.knockbackMul = c.Has(p + "knockback_mul") ? c.F(p + "knockback_mul") : 1.f;
         e.sprite = c.S(p + "sprite");
         e.drawSize = c.F(p + "draw_size");
         b.enemies.push_back(e);
@@ -136,6 +141,7 @@ Balance Balance::Load(const core::Config& c) {
         w.flash = opt("flash");
         w.levelDamage = opt("level_damage");
         w.levelCooldown = opt("level_cooldown");
+        w.knockback = opt("knockback");
         b.weapons.push_back(w);
     }
     for (const auto& n : c.List("upgrades")) {

@@ -30,6 +30,7 @@ private:
                 PickSpawnPos(playerPos, g.bal.spawnMin, g.bal.spawnMax, pos)) {
                 g.boss = CreateEnemy(g, g.bal.EnemyIndex("boss"), pos);
                 g.bossSpawned = true;
+                g.fx.push_back({FxEvent::Kind::BossAppeared, pos});
             }
         }
 

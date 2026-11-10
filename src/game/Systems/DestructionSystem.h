@@ -12,7 +12,9 @@ public:
     void Update(ECS::ECSManager& ecs, float) override {
         for (EntityID e : mEntities) {
             if (ecs.GetComponent<Health>(e).hp > 0.f) continue;
-            g.map.RemoveWall(ecs.GetComponent<GridPosition>(e).tile);   // 通行判定の更新とイベント発行は MapManager が行う
+            const Vec2i tile = ecs.GetComponent<GridPosition>(e).tile;
+            g.map.RemoveWall(tile);   // 通行判定の更新とイベント発行は MapManager が行う
+            g.fx.push_back({FxEvent::Kind::WallBroken, g.map.TileCenter(tile)});
             ecs.DestroyLater(e);
         }
     }

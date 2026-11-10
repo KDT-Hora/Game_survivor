@@ -14,7 +14,7 @@ protected:
         const Vec2 pos = ecs.GetComponent<Transform>(player).pos;
         const Vec2 aim = ecs.GetComponent<Player>(player).aim;
         CreateProjectile(g, pos, aim * def.speed, Damage(def, slot, stats), def.lifetime, def.radius,
-                         /*pierce=*/true, /*kind=*/1);
+                         /*pierce=*/true, /*kind=*/1, /*hostile=*/false, def.knockback);
         return true;
     }
 };

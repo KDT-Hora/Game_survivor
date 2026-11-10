@@ -627,7 +627,7 @@ TEST(sim_build_fails_without_material_and_changes_nothing) {
 }
 
 TEST(sim_build_pushes_enemy_and_item_out_of_the_way) {
-    Fixture f;
+    Fixture f("pickup.magnet_radius = 0\n");   // 吸い寄せで先に拾われないようにする
     f.GodMode();
     f.ClearWeapon();
     const Vec2i pt = f.PlayerTile();
@@ -1005,6 +1005,105 @@ TEST(sim_pickup_collects_materials_on_contact) {
     f.Step({}, 2);
     CHECK(inv.wood == wood + 2 && inv.stone == stone + 1);
     CHECK(!f.ecs().IsAlive(a) && !f.ecs().IsAlive(b) && f.ecs().IsAlive(far));
+}
+
+
+TEST(pickups_within_magnet_range_drift_to_the_player_and_get_collected) {
+    Fixture f;
+    f.GodMode();
+    f.ClearWeapon();
+    auto& ex = f.ecs().GetComponent<Experience>(f.sim.PlayerEntity());
+    const float magnet = f.g().bal.magnetRadius;
+    auto near = CreatePickup(f.g(), PickupKind::Xp, 1, f.PlayerPos() + Vec2{magnet - 10.f, 0.f});
+    auto far = CreatePickup(f.g(), PickupKind::Xp, 1, f.PlayerPos() + Vec2{magnet + 40.f, 0.f});
+    const float farX = f.ecs().GetComponent<Transform>(far).pos.x;
+    f.Step({}, 3);
+    CHECK(f.ecs().IsAlive(near));
+    CHECK(f.ecs().GetComponent<Transform>(near).pos.x < f.PlayerPos().x + magnet - 10.f);   // 近づいている
+    f.Step({}, 60 * 2);
+    CHECK(!f.ecs().IsAlive(near) && ex.xp == 1);          // 触れなくても拾えた
+    CHECK(f.ecs().IsAlive(far));
+    CHECK(f.ecs().GetComponent<Transform>(far).pos.x == farX);   // 範囲外は動かない
+}
+
+TEST(heal_pickup_restores_hp_up_to_the_maximum_and_waits_while_hp_is_full) {
+    Fixture f;
+    f.ClearWeapon();
+    auto& hp = f.ecs().GetComponent<Health>(f.sim.PlayerEntity());
+    const float magnet = f.g().bal.magnetRadius;
+    // 満タンのときは吸い寄せられない
+    auto waiting = CreatePickup(f.g(), PickupKind::Heal, 1, f.PlayerPos() + Vec2{magnet - 10.f, 0.f});
+    f.Step({}, 60);
+    CHECK(f.ecs().IsAlive(waiting));
+    // 減っていれば吸い寄せられて回復する。最大 HP は超えない
+    hp.hp = hp.maxHp - 5.f;
+    f.Step({}, 60 * 2);
+    CHECK(!f.ecs().IsAlive(waiting));
+    CHECK(hp.hp == hp.maxHp);
+    hp.hp = 10.f;
+    CreatePickup(f.g(), PickupKind::Heal, 1, f.PlayerPos());
+    f.Step({}, 2);
+    CHECK(hp.hp == 10.f + f.g().bal.healAmount);
+}
+
+TEST(knockback_pushes_enemies_away_but_not_into_solids) {
+    Fixture f("enemy.normal.speed = 0\n");   // 敵は自分からは動かない(押された分だけ動く)
+    f.GodMode();
+    const Vec2i pt = f.PlayerTile();
+    // 右に敵、そのすぐ右に岩。弾は右へ飛ぶので、敵は岩の方へ押されるが食い込まない。
+    auto e = f.Dummy(f.Center({pt.x + 4, pt.y}));
+    CreateRock(f.g(), {pt.x + 5, pt.y});
+    const float startX = f.ecs().GetComponent<Transform>(e).pos.x;
+    bool overlapped = false, pushed = false;
+    for (int i = 0; i < 60 * 3; ++i) {
+        f.Step(f.Aim({1.f, 0.f}));
+        if (EnemyOverlapsSolid(f, e)) overlapped = true;
+        if (f.ecs().GetComponent<Transform>(e).pos.x > startX + 1.f) pushed = true;
+    }
+    CHECK(pushed);
+    CHECK(!overlapped);
+    CHECK(f.Hp(e) < 1000.f);
+    // ボスは押されない
+    auto boss = f.Spawn("boss", f.Center({pt.x, pt.y + 5}));
+    const Vec2 bossPos = f.ecs().GetComponent<Transform>(boss).pos;
+    f.ecs().GetComponent<Enemy>(boss).hold = true;
+    f.g().damage.push_back({boss, 1.f, Vec2{0.f, 50.f}});
+    f.Step(f.Aim({1.f, 0.f}));
+    CHECK(Distance(f.ecs().GetComponent<Transform>(boss).pos, bossPos) < 8.f);
+}
+
+TEST(frame_events_describe_only_the_last_step) {
+    Fixture f;
+    f.GodMode();
+    auto e = f.Spawn("normal", f.PlayerPos() + Vec2{60.f, 0.f});
+    f.ecs().GetComponent<Health>(e).hp = 1.f;
+    bool sawHit = false, sawDeath = false;
+    for (int i = 0; i < 60 * 3 && !sawDeath; ++i) {
+        f.Step(f.Aim({1.f, 0.f}));
+        for (const FxEvent& ev : f.g().fx) {
+            if (ev.kind == FxEvent::Kind::EnemyHit) sawHit = true;
+            if (ev.kind == FxEvent::Kind::EnemyDied) { sawDeath = true; CHECK(ev.def == f.Enemy("normal")); }
+        }
+    }
+    CHECK(sawHit && sawDeath);
+    f.Step({}, 1);
+    for (const FxEvent& ev : f.g().fx) CHECK(ev.kind != FxEvent::Kind::EnemyDied);   // 前のステップの出来事は残らない
+}
+
+TEST(result_counters_track_walls_and_rocks) {
+    Fixture f;
+    f.GodMode();
+    f.ClearWeapon();
+    const Vec2i pt = f.PlayerTile();
+    InputState in = f.Aim({1.f, 0.f});
+    in.buildPressed = true;
+    f.Step(in);
+    f.Step({}, 1);
+    CHECK(f.g().wallsBuilt == 1);
+    CreateRock(f.g(), {pt.x, pt.y - 1});
+    f.SetPlayerPos(f.Center(pt) + Vec2{0.f, -8.f});
+    f.Step(f.Move(0.f, -1.f), 60 * 2);
+    CHECK(f.g().rocksPushed >= 1);
 }
 
 TEST(sim_enemies_increase_over_time) {

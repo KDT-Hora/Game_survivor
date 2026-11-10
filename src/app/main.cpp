@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
     std::vector<std::pair<std::string, std::string>> overrides;
     std::uint32_t seed = 1;
     bool bot = false, noAutostart = false, debugDraw = false, debugPaths = false, startDebug = false;
+    float zoom = 1.f;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
@@ -99,6 +100,7 @@ int main(int argc, char** argv) {
         else if (a == "--debug-draw") debugDraw = true;    // 確認用: 当たり判定を重ねて描く
         else if (a == "--debug-paths") debugPaths = true;  // 確認用: 敵の経路も描く
         else if (a == "--mode") modeId = next();   // ゲームモード(例: short)
+        else if (a == "--zoom") zoom = static_cast<float>(std::atof(next().c_str()));   // 確認用: 画面を拡大して撮る
         else if (a == "--bot") bot = true;
         else if (a == "--no-autostart") noAutostart = true;
     }
@@ -118,6 +120,7 @@ int main(int argc, char** argv) {
     if (!modeId.empty() && !sim.SetModeById(modeId)) std::fprintf(stderr, "警告: 不明なモード: %s\n", modeId.c_str());
     const float step = sim.Ctx().bal.step;
     renderer.debug.colliders = debugDraw || debugPaths;
+    if (zoom > 0.f) renderer.zoom = zoom;
     renderer.debug.paths = debugPaths;
 
     // ---------------------------------------------------------- 確認用(ヘッドレス)モード
@@ -198,6 +201,8 @@ int main(int argc, char** argv) {
                 in.aimWorld = {w.x, w.y};
             }
             sim.Step(in, step);
+            renderer.OnStep(sim);
+            renderer.Update(sim, step, sf::Vector2f(kWindow));
         }
         auto& ecs = sim.Ecs();
         std::printf("state=%d time=%.1f enemies=%d kills=%d pickups=%d entities=%u\n", static_cast<int>(sim.State()), sim.Ctx().time,
@@ -226,6 +231,7 @@ int main(int argc, char** argv) {
     // ---------------------------------------------------------- 通常起動
     sf::RenderWindow window(sf::VideoMode(kWindow), "Terrain Survivor");
     window.setFramerateLimit(60);
+    window.setIcon(renderer.WindowIcon().getSize(), renderer.WindowIcon().getPixelsPtr());
     sf::Clock clock;
     double acc = 0.0;
     bool tabHeld = false;
@@ -265,11 +271,19 @@ int main(int argc, char** argv) {
             if (const auto* m = ev->getIf<sf::Event::MouseButtonPressed>(); m && !uiMouse) {
                 if (m->button == sf::Mouse::Button::Right) in.buildPressed = true;
                 if (m->button == sf::Mouse::Button::Left) {
-                    in.startPressed = true;
                     const sf::Vector2f p(static_cast<float>(m->position.x), static_cast<float>(m->position.y));
+                    const sf::Vector2f ws(window.getSize());
+                    int modeHit = -1;
+                    if (sim.State() == GameState::Title) {   // モードの枠を押したときは選ぶだけ(開始しない)
+                        const int nm = static_cast<int>(sim.Modes().size());
+                        for (int i = 0; i < nm; ++i)
+                            if (app::Renderer::ModeRect(i, nm, ws).contains(p)) modeHit = i;
+                    }
+                    if (modeHit >= 0) in.modeSelect = modeHit;
+                    else in.startPressed = true;
                     const int n = static_cast<int>(sim.Ctx().offer.size());
                     for (int i = 0; i < n; ++i)
-                        if (app::Renderer::CardRect(i, n, sf::Vector2f(window.getSize())).contains(p)) in.choose = i;
+                        if (app::Renderer::CardRect(i, n, ws).contains(p)) in.choose = i;
                 }
             }
         }
@@ -283,8 +297,15 @@ int main(int argc, char** argv) {
             if (sf::Keyboard::isKeyPressed(K::D)) in.move.x += 1.f;
         }
         const sf::View view = renderer.GameView(sim, sf::Vector2f(window.getSize()));
-        const sf::Vector2f w = window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
+        const sf::Vector2i mousePx = sf::Mouse::getPosition(window);
+        const sf::Vector2f w = window.mapPixelToCoords(mousePx, view);
         in.aimWorld = {w.x, w.y};
+        renderer.SetMouse(sf::Vector2f(mousePx));
+        if (sim.State() == GameState::Title && window.hasFocus() && !debugUi.WantsMouse()) {   // マウスを乗せたモードを選ぶ
+            const int nm = static_cast<int>(sim.Modes().size());
+            for (int i = 0; i < nm; ++i)
+                if (app::Renderer::ModeRect(i, nm, sf::Vector2f(window.getSize())).contains(sf::Vector2f(mousePx))) in.modeSelect = i;
+        }
 
         const sf::Time frameTime = clock.restart();
         debugUi.BeginFrame(window, frameTime, sim, renderer);
@@ -296,6 +317,7 @@ int main(int argc, char** argv) {
         InputState stepIn = in;
         while (acc >= step && steps < maxSteps) {
             sim.Step(stepIn, step);
+            renderer.OnStep(sim);
             stepIn.buildPressed = stepIn.pausePressed = stepIn.startPressed = false;   // エッジは最初の1ステップだけ
             stepIn.choose = -1;
             stepIn.wallSelect = stepIn.modeSelect = -1;
@@ -307,6 +329,7 @@ int main(int argc, char** argv) {
             pending.choose = -1;
             pending.wallSelect = pending.modeSelect = -1;
         }
+        renderer.Update(sim, std::min(0.1f, frameTime.asSeconds()), sf::Vector2f(window.getSize()));
         renderer.Draw(window, sim, tabHeld);
         debugUi.Render(window);
         window.display();

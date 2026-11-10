@@ -25,7 +25,9 @@ if(MSVC)
   set_source_files_properties(${IMGUI_SRC} PROPERTIES COMPILE_OPTIONS "/W0")   # サードパーティは警告を出さない
 endif()
 
-add_executable(terrain_survivor src/app/main.cpp src/app/Renderer.cpp src/app/Renderer.h src/app/DebugUi.cpp src/app/DebugUi.h ${IMGUI_SRC})
+set(APP_SRC src/app/main.cpp src/app/Renderer.cpp src/app/Renderer.h src/app/Art.cpp src/app/Art.h src/app/Effects.cpp src/app/Effects.h
+  src/app/DebugUi.cpp src/app/DebugUi.h)
+add_executable(terrain_survivor ${APP_SRC} ${IMGUI_SRC})
 target_compile_definitions(terrain_survivor PRIVATE IMGUI_DISABLE_DEMO_WINDOWS)
 target_link_libraries(terrain_survivor PRIVATE ts_core SFML::Graphics SFML::Window SFML::System opengl32)
 target_include_directories(terrain_survivor PRIVATE third_party/SFML/include third_party/imgui third_party/imgui-sfml)
@@ -39,5 +41,5 @@ target_link_libraries(ts_tests PRIVATE ts_core)
 #  ・作業ディレクトリはプロジェクト直下(data/ や Image/ を見つけるため)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT terrain_survivor)
 set_target_properties(terrain_survivor ts_tests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "src" FILES ${CORE_SRC} src/app/main.cpp src/app/Renderer.cpp src/app/Renderer.h src/app/DebugUi.cpp src/app/DebugUi.h)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "src" FILES ${CORE_SRC} ${APP_SRC})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "third_party" FILES ${IMGUI_SRC})

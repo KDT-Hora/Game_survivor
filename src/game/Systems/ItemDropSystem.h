@@ -3,7 +3,7 @@
 
 namespace game {
 
-// 敵が死んだ位置に、経験値と素材のアイテムを落とす。
+// 敵が死んだ位置に、経験値と素材のアイテムを落とす。たまに回復アイテムも落とす。
 class ItemDropSystem : public GameSystem {
 public:
     explicit ItemDropSystem(GameContext& c) : GameSystem(c) {}
@@ -15,6 +15,7 @@ public:
             CreatePickup(g, PickupKind::Xp, def.xp, Jitter(death.pos));
             if (g.rng.Chance(def.dropWoodChance)) CreatePickup(g, PickupKind::Wood, def.dropWoodAmount, Jitter(death.pos));
             if (g.rng.Chance(def.dropStoneChance)) CreatePickup(g, PickupKind::Stone, def.dropStoneAmount, Jitter(death.pos));
+            if (g.rng.Chance(def.dropHealChance)) CreatePickup(g, PickupKind::Heal, 1, Jitter(death.pos));
         }
         g.deaths.clear();
     }

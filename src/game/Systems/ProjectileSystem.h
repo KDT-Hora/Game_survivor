@@ -34,6 +34,8 @@ public:
     }
 
 private:
+    static Vec2 Knock(const Projectile& p) { return p.vel.Normalized() * p.knock; }
+
     // 敵の弾: 壁に当たったら壁にダメージを与えて消える。プレイヤーに当たったらダメージを与えて消える。
     void HitPlayerOrWall(ECS::ECSManager& ecs, EntityID self, const Projectile& projectile, Vec2 pos, float radius) {
         const EntityID wall = g.map.WallAt(g.map.WorldToTile(pos));
@@ -59,7 +61,7 @@ private:
             if (!t || !c || Distance(t->pos, pos) >= c->radius + radius) return;
             if (std::find(projectile.hit.begin(), projectile.hit.end(), other) != projectile.hit.end()) return;
             projectile.hit.push_back(other);
-            g.damage.push_back({other, projectile.damage});
+            g.damage.push_back({other, projectile.damage, Knock(projectile)});
         });
     }
 
@@ -76,7 +78,7 @@ private:
             if (dist < c->radius + radius && dist < best) { best = dist; hit = other; }
         });
         if (hit == ECS::NULL_ENTITY) return;
-        g.damage.push_back({hit, projectile.damage});
+        g.damage.push_back({hit, projectile.damage, Knock(projectile)});
         ecs.DestroyLater(self);
     }
 };

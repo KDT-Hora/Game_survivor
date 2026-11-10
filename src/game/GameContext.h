@@ -26,6 +26,17 @@ struct InputState {
 struct DamageEvent {
     EntityID target = ECS::NULL_ENTITY;
     float amount = 0.f;
+    Vec2 knock;               // 敵をこの分だけ押す(弾の進行方向・爆心から外向き)。ゼロなら押さない
+};
+
+// そのステップに起きた、見た目や音に使う出来事。GameSession::Step の先頭で消えるので、app 層は Step のたびに読む。
+// ゲームの進行には一切使わない(読まなくても結果は変わらない)。
+struct FxEvent {
+    enum class Kind { EnemyHit, EnemyDied, PlayerHurt, Explosion, WallBuilt, WallBroken, BuildFailed, RockMoved, Pickup, LevelUp, BossAppeared };
+    Kind kind;
+    Vec2 pos;
+    float amount = 0.f;       // ダメージ量・爆発半径など
+    int def = 0;              // 敵の種類・アイテムの種類・失敗理由など、種類ごとの補助情報
 };
 
 struct DeathRecord {
@@ -76,11 +87,13 @@ struct GameContext {
     int enemyCount = 0, pickupCount = 0;  // SpatialIndexSystem が毎フレーム更新
     std::vector<int> offer;   // レベルアップ候補(bal.upgrades の添字)
     std::vector<int> taken;   // 取得済み強化の回数(統計用)
+    int wallsBuilt = 0, rocksPushed = 0;   // 結果画面に出す地形操作の回数
 
     SpatialGrid enemyGrid, pickupGrid;
     std::vector<EntityID> projectiles, bombs;   // 描画用(SpatialIndexSystem が毎フレーム更新)
     std::vector<DamageEvent> damage;
     std::vector<DeathRecord> deaths;
+    std::vector<FxEvent> fx;
     BuildFail lastBuildFail = BuildFail::None;
     bool lastBuildOk = false;
 
@@ -94,8 +107,9 @@ EntityID CreateRock(GameContext& g, Vec2i tile);
 EntityID CreateWall(GameContext& g, Vec2i tile, int def);
 EntityID CreateEnemy(GameContext& g, int def, Vec2 pos);
 EntityID CreatePickup(GameContext& g, PickupKind kind, int amount, Vec2 pos);
-EntityID CreateProjectile(GameContext& g, Vec2 pos, Vec2 vel, float damage, float life, float radius, bool pierce = false, int kind = 0, bool hostile = false);
-EntityID CreateBomb(GameContext& g, Vec2 pos, float fuse, float blastRadius, float damage, float flash);
+EntityID CreateProjectile(GameContext& g, Vec2 pos, Vec2 vel, float damage, float life, float radius, bool pierce = false, int kind = 0, bool hostile = false,
+                          float knock = 0.f);
+EntityID CreateBomb(GameContext& g, Vec2 pos, float fuse, float blastRadius, float damage, float flash, float knock = 0.f);
 
 // 敵の移動・見通しの判定で使う「通れないもの」の種類(壁をすり抜ける敵は Ghost)。
 inline MapManager::Who WhoOf(const EnemyDef& def) { return def.ignoresWalls ? MapManager::Who::Ghost : MapManager::Who::Enemy; }
